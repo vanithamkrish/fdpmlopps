@@ -1,0 +1,48 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build Docker Image
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mlops-sales:latest .
+
+      - name: Push Docker Image
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/mlops-sales:latest
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlops-sales-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlops-sales
+  template:
+    metadata:
+      labels:
+        app: mlops-sales
+    spec:
+      containers:
+      - name: mlops-sales-container
+        image: dineshjothiram/mlops-sales:latest
+        ports:
+        - containerPort: 8000
